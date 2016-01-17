@@ -36,5 +36,16 @@
     "glslify": "^5.0.0",
     "lodash.defaultsdeep": "^3.10.0",
     "vertices-bounding-box": "^1.0.0"
-  }
+  },
+  "name": "geo-ambient-occlusion",
+  "description": "Generates a per-vertex ambient occlusion array for arbitrary meshes.",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wwwtyro/geo-ambient-occlusion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/wwwtyro/geo-ambient-occlusion/issues"
+  },
+  "homepage": "https://github.com/wwwtyro/geo-ambient-occlusion#readme"
 }
