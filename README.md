@@ -2,6 +2,9 @@
 
 Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
+<img src="https://raw.githubusercontent.com/wwwtyro/geo-ambient-occlusion/master/images/screenshot.png" width="100%">
+
+
 ## How does it work?
 
 `geo-ambient-occlusion` renders multiple shadow maps for your mesh from random viewpoints. It averages the occlusion
