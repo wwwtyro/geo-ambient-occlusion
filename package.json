@@ -2,6 +2,7 @@
   "main": "index.js",
   "scripts": {
     "start": "budo --live example/index.js -- -t glslify",
+    "build": "browserify -t glslify example/index.js > example/bundle.js",
     "test": "standard"
   },
   "keywords": [
