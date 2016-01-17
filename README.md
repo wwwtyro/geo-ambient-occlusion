@@ -4,6 +4,7 @@ Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
 <img src="https://raw.githubusercontent.com/wwwtyro/geo-ambient-occlusion/master/images/screenshot.png" width="100%">
 
+[Demo](http://wwwtyro.github.io/geo-ambient-occlusion/)
 
 ## How does it work?
 
