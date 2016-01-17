@@ -12,7 +12,7 @@ Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
 `geo-ambient-occlusion` renders multiple shadow maps for your mesh from random viewpoints. It averages the occlusion
 for each vertex across all the shadow maps to calculate an ambient occlusion value for each. This data is converted
-into a Float32Array of shading (1.0 - occlusion) values and returned to you for immediate use as an attribute in your
+into a `Float32Array` of shading (1.0 - occlusion) values and returned to you for immediate use as an attribute in your
 WebGL shader program.
 
 ## Install
