@@ -40,7 +40,9 @@ module.exports = function AO (positions, opts) {
   var centered = tform(positions, translate)
 
   // Scale the geometry to a 1x1x1 cube.
-  var bound = Math.sqrt(3) / 2
+  // Shrink it a little to have a buffer
+  // from edge effects.
+  var bound = 0.9 * Math.sqrt(3) / 2
   var _scale = [
     bound / (bb[1][0] - bb[0][0]),
     bound / (bb[1][1] - bb[0][1]),
