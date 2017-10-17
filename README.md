@@ -6,7 +6,7 @@ Generates a per-vertex ambient occlusion array for arbitrary meshes.
   <img src="https://github.com/wwwtyro/media/raw/master/geo-ambient-occlusion-000.gif" width="100%">
 </p>
 
-[Demo](http://wwwtyro.github.io/geo-ambient-occlusion/)
+[Demo](https://wwwtyro.github.io/geo-ambient-occlusion/)
 
 > Note: requires `OES_texture_float` extension.
 
@@ -28,8 +28,6 @@ npm install geo-ambient-occlusion
 ## Example
 
 ```js
-"use strict";
-
 let dragon = require('stanford-dragon/2');
 const geoao = require('geo-ambient-occlusion');
 
