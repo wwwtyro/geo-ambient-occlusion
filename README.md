@@ -2,7 +2,9 @@
 
 Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
-<img src="https://i.imgur.com/1FUzu5t.gif" width="100%">
+<p align="center">
+  <img src="https://github.com/wwwtyro/media/raw/master/geo-ambient-occlusion-000.gif" width="100%">
+</p>
 
 [Demo](http://wwwtyro.github.io/geo-ambient-occlusion/)
 
