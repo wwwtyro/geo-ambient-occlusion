@@ -2,18 +2,20 @@
 
 Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
-<img src="https://raw.githubusercontent.com/wwwtyro/geo-ambient-occlusion/master/images/screenshot.png" width="100%">
+<img src="https://i.imgur.com/1FUzu5t.gif" width="100%">
 
 [Demo](http://wwwtyro.github.io/geo-ambient-occlusion/)
 
-> Note: requires support for renderable `FLOAT` textures.
+> Note: requires `OES_texture_float` extension.
 
 ## How does it work?
 
 `geo-ambient-occlusion` renders multiple shadow maps for your mesh from random viewpoints. It averages the occlusion
 for each vertex across all the shadow maps to calculate an ambient occlusion value for each. This data is converted
-into a `Float32Array` of shading (1.0 - occlusion) values and returned to you for immediate use as an attribute in your
-WebGL shader program.
+into a `Float32Array` of occlusion values and returned to you for immediate use as an attribute in your shader program.
+
+`geo-ambient-occlusion` is built on top of the disgustingly good [regl](https://github.com/regl-project/regl) WebGL
+library.
 
 ## Install
 
@@ -23,63 +25,30 @@ npm install geo-ambient-occlusion
 
 ## Example
 
-### Javascript
 ```js
-var mesh = require('stanford-dragon/3')
-var GeoAO = require('geo-ambient-occlusion')
+"use strict";
 
-var geometry = Geometry(gl)
-geometry.attr('aPosition', mesh.positions)
-geometry.faces(mesh.cells)
+let dragon = require('stanford-dragon/2');
+const geoao = require('geo-ambient-occlusion');
 
-var aoSampler = new GeoAO(mesh.positions, {
-  resolution: 256,
-  bias: 0.01,
-  cells: mesh.cells
-})
+const aoSampler = geoao(dragon.positions, { cells: dragon.cells });
 
-ao = aoSampler.sample(256)
-geometry.attr('aOcclusion', ao, {size: 1})
-
-geometry.bind(program)
-geometry.draw(gl.TRIANGLES)
-```
-
-### Vertex Shader
-```glsl
-attribute vec3 aPosition;
-attribute float aOcclusion;
-
-uniform mat4 uModel;
-uniform mat4 uView;
-uniform mat4 uProjection;
-
-varying float vOcclusion;
-
-void main() {
-    gl_Position = uProjection * uView * uModel * vec4(aPosition, 1.0);
-    vOcclusion = aOcclusion;
+for (let i = 0; i < 256; i++) {
+  aoSampler.sample();
 }
-```
 
-### Fragment Shader
-```glsl
-varying float vOcclusion;
+const ao = aoSampler.report();
 
-void main() {
-    gl_FragColor = vec4(vOcclusion,vOcclusion,vOcclusion, 1);
-}
+aoSampler.dispose();
 ```
 
 ## API
 
-```js
-var GeoAO = require('geo-ambient-occlusion')
-```
+#### `const geoao = require('geo-ambient-occlusion')`
 
 ### Constructor
 
-#### `var aoSampler = new GeoAO(positions[, opts])`
+#### `const aoSampler = geoao(positions[, opts])`
 
 `positions` is the vertex array for your mesh. It can be any of:
 
@@ -93,15 +62,21 @@ var GeoAO = require('geo-ambient-occlusion')
 * `resolution` (int) is the resolution to build the depth buffer at. Defaults to `256`.
 * `bias` (float) is the bias applied to the shadow map while building the ambient occlusion data. Defaults to `0.01`.
 * `cells` is the index data for your mesh, if you're using a [simplicial complex](https://github.com/mikolalysenko/simplicial-complex). Defaults to `null`.
+* `regl` is an optional [regl](https://github.com/regl-project/regl) context you can provide to reduced the overhead of
+multiple WebGL contexts. This context will need to have the `OES_texture_float` extension enabled, and depending on the
+size of your mesh, also the `OES_element_index_uint` extension.
 
 ### Methods
 
-#### `var ao = aoSampler.sample(nSamples)`
+#### `aoSampler.sample()`
 
-Performs `nSamples` (int) iterations of ambient occlusion sampling on the mesh positions provided in the constructor.
-Returns a flat Float32Array of shading values (1.0 - occlusion) that you can immediately consume as an attribute in your shader
-program.
+Collects a single sample of ambient occlusion data. Run this several hundred times to reach a useful average.
 
-Since a fully converged AO calculation can take on the order of seconds or more even on modern GPUs, `geo-ambient-occlusion`
-allows you to split up the work between multiple calls to this function so that you can provide progress feedback to
-your user. If you don't need to do this, you can simply set `nSamples` to the total number of samples you want to take.
+#### `const ao = aoSampler.report()`
+
+Returns the average ambient occlusion, per vertex, sampled so far. Format is a `Float32Array`.
+
+#### `aoSampler.dispose()`
+
+Disposes of all resources used for this sampling. Does not dispose of the internal `regl` context if it was provided by
+the user. Behavior of `aoSampler` after calling this function is undefined.
