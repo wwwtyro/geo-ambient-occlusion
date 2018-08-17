@@ -204,7 +204,7 @@ module.exports = function(positions, opts) {
     mat4.rotateX(model, model, Math.random() * 100);
     mat4.rotateY(model, model, Math.random() * 100);
     mat4.rotateZ(model, model, Math.random() * 100);
-    regl({framebuffer: fboPosition})(() => {
+    fboPosition.use(() => {
       regl.clear({
         color: [0,0,0,1],
         depth: 1,
@@ -214,7 +214,7 @@ module.exports = function(positions, opts) {
       model: model,
       projection: projection,
     });
-    regl({framebuffer: destination})(() => {
+    destination.use(() => {
       regl.clear({
         color: [0,0,0,1],
         depth: 1,
@@ -234,7 +234,7 @@ module.exports = function(positions, opts) {
   function report() {
     // Gather the resulting pixels.
     let pixels;
-    regl({framebuffer: fboOcclusion[1 - occlusionIndex]})(() => {
+    fboOcclusion[1 - occlusionIndex].use(() => {
       pixels = regl.read();
     });
 

@@ -69,6 +69,7 @@ async function main() {
   await display();
   const samples = 512;
   let t0 = performance.now();
+  let tStart = t0;
   for (let i = 0; i < samples; i++) {
     aoSampler.sample();
     if (performance.now() - t0 > 100) {
@@ -77,6 +78,8 @@ async function main() {
       t0 = performance.now();
     }
   }
+  var tEnd = performance.now();
+  console.info('Computed '+samples+' samples in '+(tEnd - tStart).toFixed(1)+'ms');
 
   // We're done with the progress bar, hide it.
   fraction(0);
