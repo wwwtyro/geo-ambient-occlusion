@@ -2,7 +2,7 @@
   "name": "geo-ambient-occlusion",
   "license": "Unlicense",
   "author": "Rye Terrell <ryeterrell@ryeterrell.net> (http://wwwtyro.github.io)",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "scripts": {
     "start": "cd example && budo -H 0.0.0.0 main.js:bundle.js --live"
   },
