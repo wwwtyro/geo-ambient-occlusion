@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 
 const REGL = require('regl');
@@ -7,6 +7,8 @@ const center = require('geo-center');
 const boundingBox = require('vertices-bounding-box');
 const transform = require('geo-3d-transform-mat4');
 const converter = require('geo-convert-position-format');
+const vertexNormals = require('normals').vertexNormals;
+const reindex = require('mesh-reindex');
 const defaults = require('defaults');
 
 
@@ -35,9 +37,20 @@ module.exports = function(positions, opts) {
   // Create an array with the vertex data.
   const vertexData = converter.convert(positions, converter.TYPED_ARRAY);
 
+  // Create normals.
+  let mesh = {
+    cells: opts.cells,
+    positions: positions,
+  };
+  if (mesh.cells === undefined) {
+    mesh = reindex(vertexData);
+  }
+  const normals = vertexNormals(mesh.cells, mesh.positions, 0);
+  const normalData = converter.convert(normals, converter.TYPED_ARRAY);
+
   // Make sure the position array is divisible by three.
   if (vertexData.length % 3 !== 0) {
-    throw new Error('geo-ambient-occlusion: Position array not divisible by three.')
+    throw new Error('geo-ambient-occlusion: Position array not divisible by three.');
   }
 
   // Copy it into the smallest POT-length array we can.
@@ -49,9 +62,13 @@ module.exports = function(positions, opts) {
   const vertexDataArray = new Float32Array(vertexTextureRes * vertexTextureRes * 3);
   vertexDataArray.set(vertexData);
 
+  // Copy the normal data into a same-size array.
+  const normalDataArray = new Float32Array(vertexTextureRes * vertexTextureRes * 3);
+  normalDataArray.set(normalData);
+
   // Figure out what extensions we need.
   const extensions = ['OES_texture_float'];
-  if (vertexCount > 65535) {
+  if (vertexCount > 65535 && opts.cells !== undefined) {
     extensions.push('OES_element_index_uint');
   }
 
@@ -59,7 +76,7 @@ module.exports = function(positions, opts) {
   if (opts.regl) {
     for (let ext of extensions) {
       if (!opts.regl.hasExtension(ext)) {
-        throw new Error("geo-ambient-occlusion: Provided regl context needs the " + ext + " extension for this mesh.");
+        throw new Error('geo-ambient-occlusion: Provided regl context needs the ' + ext + ' extension for this mesh.');
       }
     }
   }
@@ -128,6 +145,15 @@ module.exports = function(positions, opts) {
     type: 'float'
   });
 
+  // Create a texture that stores our normal directions.
+  const tNormal = regl.texture({
+    width: vertexTextureRes,
+    height: vertexTextureRes,
+    data: normalDataArray,
+    format: 'rgb',
+    type: 'float',
+  });
+
   // Define the command for occlusion accumulation.
   const cmdOcclusion = regl({
     vert: `
@@ -140,23 +166,30 @@ module.exports = function(positions, opts) {
     frag: `
       precision highp float;
 
-      uniform sampler2D tPosition, tSource, tVertex;
+      uniform sampler2D tPosition, tSource, tVertex, tNormal;
       uniform float count, bias;
       uniform vec2 resolution;
       uniform mat4 model;
+
+      const float INVSQRT3 = 0.5773502691896258; // 1/sqrt(3)
 
       void main() {
           vec2 texel = gl_FragCoord.xy/resolution;
           vec3 vert = texture2D(tVertex, texel).rgb;
           vert = vec3(model * vec4(vert, 1));
-          float s = sqrt(3.0);
-          float z = texture2D(tPosition, vert.xy/s + 0.5).b;
+          vec3 norm = texture2D(tNormal, texel).rgb;
+          norm = vec3(model * vec4(norm, 1));
+          float z = texture2D(tPosition, INVSQRT3 * vert.xy + 0.5).z;
           float o = 0.0;
           if ((vert.z - z) < -bias) {
               o = 1.0;
           }
-          float src = texture2D(tSource, texel).r;
-          gl_FragColor = vec4(src + o, 0, 0, 1);
+          vec4 src = texture2D(tSource, texel);
+          if (dot(norm, vec3(0,0,1)) > 0.0) {
+            gl_FragColor = src + vec4(o, 1, 0, 0);
+          } else {
+            gl_FragColor = src;
+          }
       }
     `,
     attributes: {
@@ -166,6 +199,7 @@ module.exports = function(positions, opts) {
       tPosition: fboPosition,
       tSource: regl.prop('source'),
       tVertex: tVertex,
+      tNormal: tNormal,
       count: regl.prop('count'),
       bias: regl.prop('bias'),
       resolution: [vertexTextureRes, vertexTextureRes],
@@ -174,7 +208,7 @@ module.exports = function(positions, opts) {
     viewport: {x: 0, y: 0, width: vertexTextureRes, height: vertexTextureRes},
     framebuffer: regl.prop('destination'),
     count: 6,
-  })
+  });
 
   // Keep track of our ping-ponging.
   let occlusionIndex = 0;
@@ -186,45 +220,35 @@ module.exports = function(positions, opts) {
   const d = Math.sqrt(3)/2;
   const projection = mat4.ortho([], -d, d, -d, d, -d, d);
 
-  return {
-    sample: sample,
-    report: report,
-    dispose: dispose
-  };
-
-
   // Take a single occlusion sample.
   function sample() {
     occlusionIndex = 1 - occlusionIndex;
     const source = fboOcclusion[occlusionIndex];
     const destination = fboOcclusion[1 - occlusionIndex];
     occlusionCount++;
-    const bias = 0.01;
     const model = mat4.create();
     mat4.rotateX(model, model, Math.random() * 100);
     mat4.rotateY(model, model, Math.random() * 100);
     mat4.rotateZ(model, model, Math.random() * 100);
-    fboPosition.use(() => {
-      regl.clear({
-        color: [0,0,0,1],
-        depth: 1,
-      });
+    regl.clear({
+      color: [0,0,0,1],
+      depth: 1,
+      framebuffer: fboPosition,
     });
     cmdPosition({
       model: model,
       projection: projection,
     });
-    destination.use(() => {
-      regl.clear({
-        color: [0,0,0,1],
-        depth: 1,
-      });
+    regl.clear({
+      color: [0,0,0,1],
+      depth: 1,
+      framebuffer: destination,
     });
     cmdOcclusion({
       source: source,
       destination: destination,
       count: occlusionCount,
-      bias: bias,
+      bias: opts.bias,
       model: model,
     });
   }
@@ -241,7 +265,9 @@ module.exports = function(positions, opts) {
     // Format them and return the final product.
     const result = new Float32Array(vertexCount);
     for (let i = 0; i < vertexCount; i++) {
-      result[i] = Math.min(1.0, Math.max(0.0, pixels[i * 4]/occlusionCount - 0.5));
+      const index = i * 4;
+      const total = pixels[index + 1];
+      result[i] = total === 0.0 ? 0.0 : pixels[index + 0]/total;
     }
 
     return result;
@@ -271,4 +297,9 @@ module.exports = function(positions, opts) {
     });
   }
 
-}
+  return {
+    sample: sample,
+    report: report,
+    dispose: dispose
+  };
+};

@@ -2,11 +2,15 @@
   "name": "geo-ambient-occlusion",
   "license": "Unlicense",
   "author": "Rye Terrell <ryeterrell@ryeterrell.net> (http://wwwtyro.github.io)",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "scripts": {
     "start": "cd example && budo -H 0.0.0.0 main.js:bundle.js --live"
   },
-  "keywords": ["ambient occlusion", "GPU", "regl"],
+  "keywords": [
+    "ambient occlusion",
+    "GPU",
+    "regl"
+  ],
   "main": "index.js",
   "dependencies": {
     "defaults": "^1.0.3",
@@ -14,15 +18,15 @@
     "geo-center": "^1.0.2",
     "geo-convert-position-format": "^1.0.0",
     "gl-matrix": "^2.4.0",
+    "mesh-reindex": "^1.0.0",
+    "normals": "^1.1.0",
     "regl": "^1.3.0",
+    "snowden": "^1.0.1",
     "vertices-bounding-box": "^1.0.0"
   },
   "devDependencies": {
     "budo": "^10.0.4",
-    "trackball-controller": "^1.1.1",
-    "geo-3d-box": "^2.0.2",
-    "merge-meshes": "^1.0.0",
-    "stanford-dragon": "^1.1.1"
+    "trackball-controller": "^1.1.1"
   },
   "description": "GPU-accelerated per-vertex ambient occlusion generator built on top of regl."
 }

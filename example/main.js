@@ -1,14 +1,11 @@
-"use strict";
+'use strict';
 
 
 const REGL = require('regl');
 const mat4 = require('gl-matrix').mat4;
 const Trackball = require('trackball-controller');
 const center = require('geo-center');
-const transform = require('geo-3d-transform-mat4');
-const box = require('geo-3d-box');
-const mergeMeshes = require('merge-meshes');
-const dragon = require('stanford-dragon/2');
+const mesh = require('snowden');
 
 const geoao = require('../index.js');
 
@@ -32,28 +29,12 @@ async function main() {
     extensions: ['OES_texture_float', 'OES_element_index_uint'],
   });
 
-  // Center the dragon vertices on the origin.
-  text('Centering dragon...');
+  // Center the mesh vertices on the ~origin.
+  text('Centering mesh...');
   await display();
-  dragon.positions = center(dragon.positions);
-
-  // Create a floor to set the dragon model on. We'll need enough vertices on the top to capture the per-vertex
-  // ambient occlusion.
-  const floor = box({
-    size: [128, 8, 64],
-    segments:[128, 1, 128]
+  mesh.positions = center(mesh.positions, {
+    center: [0, -0.5, 0],
   });
-
-  // Shift the floor to the feet of the dragon.
-  let miny = Infinity;
-  for (let v of dragon.positions) {
-    miny = Math.min(v[1], miny);
-  }
-  miny -= 3.8;
-  floor.positions = transform(floor.positions, mat4.translate([], mat4.create(), [0, miny, 0]));
-
-  // Merge the two meshes into one.
-  const mesh = mergeMeshes([floor, dragon]);
 
   // Initialize geo-ambient-occlusion.
   text('Initializing ambient occlusion generator...');
@@ -67,18 +48,19 @@ async function main() {
   // Sample the ambient occlusion. Every tenth of a second, give a progress update.
   text('Calculating ambient occlusion...');
   await display();
-  const samples = 512;
+  const samples = 4096;
   let t0 = performance.now();
   let tStart = t0;
   for (let i = 0; i < samples; i++) {
     aoSampler.sample();
-    if (performance.now() - t0 > 100) {
+    if (performance.now() - t0 > 1000/60) {
       fraction(i/samples);
       await display();
       t0 = performance.now();
     }
   }
   var tEnd = performance.now();
+  // eslint-disable-next-line no-console
   console.info('Computed '+samples+' samples in '+(tEnd - tStart).toFixed(1)+'ms');
 
   // We're done with the progress bar, hide it.
@@ -92,7 +74,7 @@ async function main() {
   // Dispose of resources we no longer need.
   aoSampler.dispose();
 
-  // Create a regl command for rendering the dragon. Note that we subtract the occlusion value from 1.0 in order to
+  // Create a regl command for rendering the mesh. Note that we subtract the occlusion value from 1.0 in order to
   // calculate the ambient light.
   const render = regl({
     vert: `
@@ -111,7 +93,7 @@ async function main() {
       precision highp float;
       varying float vOcclusion;
       void main() {
-        gl_FragColor = vec4(vec3(1.0 - vOcclusion) * vec3(0.95,0.95,0.95), 1.0);
+        gl_FragColor = vec4(0.95 * vec3(1.0 - vOcclusion), 1.0);
       }
     `,
     attributes: {
@@ -139,16 +121,16 @@ async function main() {
   trackball.spin(13,0);
 
   // Handle mousewheel zoom.
-  let zoom = 192;
+  let zoom = 16;
   window.addEventListener('wheel', function(e) {
     if (e.deltaY < 0) {
       zoom *= 0.9;
     } else if (e.deltaY > 0) {
       zoom *= 1.1;
     }
-    zoom = Math.max(10, Math.min(512, zoom));
+    zoom = Math.max(2, Math.min(64, zoom));
     loop();
-  })
+  });
 
   // Render loop.
   function loop() {
