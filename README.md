@@ -8,7 +8,10 @@ Generates a per-vertex ambient occlusion array for arbitrary meshes.
 
 [Demo](https://wwwtyro.github.io/geo-ambient-occlusion/)
 
-> Note: requires `OES_texture_float` extension.
+### Support notes
+
+* Requires the `OES_texture_float` extension.
+* [Currently unsupported by Safari](https://bugs.webkit.org/show_bug.cgi?id=171432).
 
 ## How does it work?
 
