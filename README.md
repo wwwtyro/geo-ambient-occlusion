@@ -65,6 +65,7 @@ aoSampler.dispose();
 * `resolution` (int) is the resolution to build the depth buffer at. Defaults to `512`.
 * `bias` (float) is the bias applied to the shadow map while building the ambient occlusion data. Defaults to `0.01`.
 * `cells` is the index data for your mesh, if you're using a [simplicial complex](https://github.com/mikolalysenko/simplicial-complex). Defaults to `undefined`.
+* `normals` are per-vertex normals, either in an array or array of arrays. If not supplied, they will be computed using the [normals](https://www.npmjs.com/package/normals) npm module.
 * `regl` is an optional [regl](https://github.com/regl-project/regl) context you can provide to reduced the overhead of
 multiple WebGL contexts. This context will need to have the `OES_texture_float` extension enabled, and depending on the
 size of your mesh, also the `OES_element_index_uint` extension.

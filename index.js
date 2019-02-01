@@ -45,7 +45,12 @@ module.exports = function(positions, opts) {
   if (mesh.cells === undefined) {
     mesh = reindex(vertexData);
   }
-  const normals = vertexNormals(mesh.cells, mesh.positions, 0);
+  let normals;
+  if (opts.normals === undefined) {
+    normals = vertexNormals(mesh.cells, mesh.positions, 0);
+  } else {
+    normals = opts.normals;
+  }
   const normalData = converter.convert(normals, converter.TYPED_ARRAY);
 
   // Make sure the position array is divisible by three.
